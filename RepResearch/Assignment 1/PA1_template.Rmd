@@ -1,0 +1,95 @@
+# Reproducible Research: Peer Assessment 1
+
+## Loading and preprocessing the data
+
+Unziping and loading the data:
+```{r}
+data <- read.csv(unzip("./activity.zip"))
+head(data)
+```
+
+## What is mean total number of steps taken per day?
+
+Plotting a histogram showing total amount of steps per day:
+```{r}
+hist(tapply(data$steps, data$date, sum), main = "Steps per day", xlab = "Number of steps per day", col = "red")
+mean(tapply(data$steps, data$date, sum), na.rm = TRUE)
+median(tapply(data$steps, data$date, sum), na.rm = TRUE)
+```
+
+## What is the average daily activity pattern?
+
+Plotting intervals vs average number of days:
+```{r}
+plot(unique(data$interval), tapply(data$steps, data$interval, mean, na.rm = TRUE), type = "l", xlab = "Interval", ylab = "Average Number of Steps")
+avgStepsPerInterval <- tapply(data$steps, data$interval, mean, na.rm = TRUE)
+intervalMaxAverage <- as.numeric(names(avgStepsPerInterval[which(avgStepsPerInterval == max(avgStepsPerInterval), arr.ind = TRUE)])) # Some perversion, don't look here :D
+# Although, any suggestions on how to get the interval number (which comes as a row.name after tapply()) here in a more elegant way are welcome in the comment section on Coursera :)
+```
+
+Interval with maximum number of steps is in `r intervalMaxAverage -5`-`r intervalMaxAverage` interval
+
+## Imputing missing values
+
+```{r}
+sum(is.na(data))
+sum(is.na(data$steps))
+```
+
+Total number of missing values is `r sum(is.na(data))`, all of which are in "Steps" column
+
+For imputing missing values I will take the mean for corresponding 5-minutes interval taking into account whether this day was weekend or weekday. In my view this will give more accurate results. 
+
+\\--> Later update: Taking an average number of steps per interval per day of the week could be more accurate in some cases, perhaps. But I've already implemented the first variant and I'm too lazy and want to go to bed :) Some day, maybe...
+
+In order to do that I'll create a copy of original dataset and add a new column with factor variable indicatind whether it is weekday or weekend which will also be used in the next part of assignment.
+```{r, echo = FALSE, results = 'hide'}
+Sys.setlocale("LC_TIME", "C") #Setting up to english names, just in case
+#Everything is hidden here because this causes R to print "C" :)
+```
+```{r}
+data2 <- cbind(data, as.factor(ifelse(weekdays(as.Date(data$date)) %in% c("Saturday", "Sunday"), "Weekend", "Weekday")))
+names(data2) <- c("steps", "date", 'interval', 'weekday')
+head(data2)
+str(data2)
+```
+
+Also I'll create a dataset which will contain the means for each interval on weekdays and weekends separately:
+```{r}
+z <- aggregate(data2$steps ~ data2$interval + data2$weekday, data = data2, mean)
+names(z) <- c("Interval", "Weekday", "Steps")
+z$Weekday <- as.character(z$Weekday)
+head(z)
+str(z)
+```
+
+Which will now be used for imputing missing values:
+```{r}
+for(i in 1:length(data2$steps)){
+    if(is.na(data2[i, "steps"])){
+        data2[i, "steps"] <- z[z$Interval == data2[i, "interval"] & z$Weekday == data2[i, "weekday"], "Steps"]
+    }
+}
+```
+
+Values for the missing values in "steps" column were successfully replaced with figures from z dataset (which contains average number of steps per interval per weekday(-end)). We can compare numbers from first six rows from both datasets (which should be equal, if everything went right):
+```{r}
+head(z)
+head(data2)
+```
+
+Plotting new histogram of total amount of steps per day with NA changed to averages per interval per weekday(-end)
+```{r}
+hist(tapply(data2$steps, data2$date, sum), main = "Steps per day", xlab = "Number of steps per day", col = "red")
+mean(tapply(data2$steps, data2$date, sum))
+median(tapply(data2$steps, data2$date, sum))
+```
+
+So mean and median for the new values had declined compared to mean and median from the dataset with NAs: `r mean(tapply(data2$steps, data2$date, sum))` vs `r mean(tapply(data$steps, data$date, sum), na.rm = TRUE)` and `r median(tapply(data2$steps, data2$date, sum))` vs `r median(tapply(data$steps, data$date, sum), na.rm = TRUE)` respectively. 
+
+## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+library(lattice)
+xyplot(Steps ~ Interval|Weekday, data = z, layout = c(1, 2), type = "l")
+```

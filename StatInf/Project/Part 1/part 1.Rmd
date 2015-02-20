@@ -1,0 +1,123 @@
+---
+title: "Statistical Inference, Course Project, Part 1"
+subtitle: Simulation of exponential distribution
+output: pdf_document
+--- 
+
+```{r, echo = FALSE}
+library(ggplot2)
+n <- 40
+lambda = 0.2
+nosim = 1000
+```
+Part 1 of the course project is about analyzing exponential distribution using Central Limit Theorem. For this analysis 40 (n = 40) exponentials will be simulated 1000 times and cample mean and variance collected from this simulations will be compated to theoretical mean and variance of distribution.
+Exponential distribution is the probability distribution that describes the time between events in a process in which events occur continuously and independently at a constant average rate [1] (in all of our simulations this rate (lambda) will be set to 0.2). Its PDF is
+$f(x;\lambda) = \begin{cases}\lambda e^{-\lambda x}\hspace{10pt}x \ge 0, \\0\hspace{30pt}x < 0.\end{cases}$ which on the graph looks like this:
+```{r, echo = F}
+x <- c(1:n)
+y <- lambda * exp(-lambda*x)
+plot(x, y, lwd = 3, frame = FALSE, type = "l")
+```
+Theoretical mean of this distribution is $1/\lambda$, which, in case of $\lambda = 0.2$ has the value of 5.
+After running 1000 simulations (nosim = 1000)
+```{r, cache = T}
+means = NULL
+for (i in 1 : nosim) means = c(means, mean(rexp(n, lambda)))
+```
+We can see, that sample means vary a lot
+```{r, echo = F}
+head(means)
+```
+ranging from `r min(means)` to `r max(means)`, which is obvious, as the sample mean depends on the sample. But if we now take mean of this vector
+```{r}
+mean(means)
+```
+this will give us the number which is quite close to our theoretical mean value of 5.
+If we increase the number of simulations we will get even better estimation of sample mean.
+```{r, echo = F, cache = T}
+means2 = NULL
+for (i in 1 : 100000) means2 = c(means2, mean(rexp(n, lambda)))
+a <- mean(means2)
+```
+For example after 100000 simulations we will get `r a`. 
+And this makes sense as our sample mean is trying to estimate the population mean and more data we collect (or simulate in this case) more precise this estimation become. We can illustrate this using cumulative mean
+
+```{r, echo = F}
+csum <- cumsum(means)/(1:nosim)
+
+g <- ggplot(data.frame(x = 1 : nosim, y = csum), aes( x = x, y = y))
+g <- g + geom_hline(yintercept = 1/lambda) + geom_line(size = 2)
+g <- g + labs(x = 'Number of obs', y = 'Cumulative mean')
+g
+```
+As can be seen from this graph, as we include more and more simulations, cumulative mean is approaching theoretical mean.
+
+Theoretical variance of exponential distribution is $1/\lambda^2$, so in case of $\lambda = 0.2$ variance = `r 1/0.2**2`
+```{r, cache = T, echo = F}
+vars = NULL
+for (i in 1 : nosim) vars = c(vars, var(rexp(n, lambda)))
+head(vars)
+```
+Now if we do basically the same calcualtions as we did previously for the mean, we will get the vector of variances, which will vary from `r min(vars)` to `r max(vars)`.
+But if we calculate the average of this vector, we will get `r mean(vars)`, which is pretty close to our theoretical variance.
+```{r, cache = T, echo = F}
+vars2 = NULL
+for (i in 1 : 100000) vars2 = c(vars2, var(rexp(n, lambda)))
+b <- mean(vars2)
+```
+Again, if we enhance the number of simulations to 100000 we will get even closer in our estimations: var = `r b`.
+And this can be further illustrated with the help of cumulative variance:
+
+```{r, echo = F}
+cvar <- cumsum(vars)/(1:nosim)
+
+g <- ggplot(data.frame(x = 1 : nosim, y = cvar), aes( x = x, y = y))
+g <- g + geom_hline(yintercept = 1/lambda**2) + geom_line(size = 2)
+g <- g + labs(x = 'Number of obs', y = 'Cumulative variance')
+g
+```
+To show that distribution of averages of 40 exponentials is approxiamtely normal, we first need to normalize the data by subtracting the mean, dividing by standard deviation and multiplying by the square root of sample size:
+```{r}
+means_norm <- NULL
+for (i in 1 : nosim) means_norm = c(means_norm, sqrt(n)*(means[i] - mean(means))/(1/lambda))
+```
+If we did this right, mean of this new vector should be 0, and standard deviation should be 1. We can check this:
+```{r}
+mean(means_norm)
+sd(means_norm)
+```
+Now we can plot a histogram of the averages and a normal distribution on top of it:
+
+```{r}
+g <- ggplot(data.frame(x = means_norm), aes(x = x))
+g <- g + geom_histogram(fill = 'salmon', colour = 'black', binwidth = 0.3, aes(y = ..density..))
+g <- g + stat_function(fun = dnorm, size = 2)
+g
+```
+As we can see, it fits quite well.
+\newpage
+However, we can go a little bit further and make a Q-Q plot (this is a method of comparing two probability distributions by plotting their quantiles against each other [2]):
+```{r}
+qqnorm(means_norm)
+qqline(means_norm) #this will add a line for normal distribution
+```
+\newpage
+If we compare it to normal vs normal:
+
+```{r, echo = F}
+par(mfcol = c(1, 2))
+means_norm_norm = NULL
+for (i in 1 : nosim) means_norm_norm = c(means_norm_norm, mean(rnorm(1000)))
+qqnorm(means_norm, ylab = "Exponential quantiles")
+qqline(means_norm) #this will add a line for normal distribution
+qqnorm(means_norm_norm, ylab = "Normal quantiles")
+qqline(means_norm_norm)
+```
+
+It is obvious from this comparing, that distribution of averages of 40 exponentials is approximately normal.
+
+\vspace{45mm}
+# References
+[1] http://en.wikipedia.org/wiki/Exponential_distribution
+
+[2] http://en.wikipedia.org/wiki/Q%E2%80%93Q_plot

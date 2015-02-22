@@ -1,0 +1,65 @@
+---
+title: "Practical Machine Learning"
+output: html_document
+---
+
+Introduction
+===
+This is final project for the course "Practical Machine Learning", which is part of Data Science Specizalization. Aim of this project is to predict whether the exercise is done correctly or not based on the data from devices such as Jawbone Up, Nike FuelBand, and Fitbit. Dataset represents the data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har
+
+Loading data and libraries
+---
+```{r, cache = T}
+library(caret)
+library(randomForest)
+trainingSetURL <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+# I didn't load test data, because it is used only for autograded submissions
+trainSet <- read.csv(url(trainingSetURL), na.strings=c("NA","#DIV/0!",""))
+```
+
+Partitioning data
+---
+
+Training set will be divided into two sets: one for training, one for testing
+```{r, cahce = T}
+inTrain <- createDataPartition(y=trainSet$classe, p=0.6, list=FALSE)
+training <- trainSet[inTrain, ]
+testing <- trainSet[-inTrain, ]
+```
+
+Cleaning data
+---
+Since there are some columns, which has lots of NA in it, it would be better to get rid of those columns:
+```{r, cache = T}
+# Gets indeses of columns, which has more than 50% of NA in them
+for(i in 1:length(training)){
+  if(sum(is.na(training[, i])) /  nrow(training) >= 0.5 ) {
+    if(exists('NAcol') == FALSE){
+      NAcol <- c(i)
+    } else {
+      NAcol <- c(NAcol, i)
+    }
+  }
+}
+
+# And remove them from both sets
+training <- training[, -NAcol]
+testing <- testing[, -NAcol]
+```
+
+Training
+---
+As an algorithm for training the model I chose random forests, since it is one of the most accurate algorithms
+```{r, cache = T}
+set.seed(54321)
+model <- randomForest(classe ~ ., data = training)
+predictions <- predict(model, newdata = testing, type = 'class')
+```
+
+Confusion Matrix
+---
+Last step is to check how good was our model in prediction on the test set. For this confusion matrix can be used
+```{r, cache = T}
+confusionMatrix(predictions, testing$classe)
+```
+As expected, random forests algorithm yielded great results.

@@ -1,0 +1,59 @@
+---
+title: "ToothGrowth Data"
+output: pdf_document
+---
+
+```{r, echo = F}
+data(ToothGrowth)
+```
+
+ToothGrowth data consists of three columns: `r names(ToothGrowth)`. len represents tooth length, supp represents the method of how vitamin C was delivered (ascorbic acid or orange juice) and dose represents the dose (obviously :)).
+```{r}
+str(ToothGrowth)
+head(ToothGrowth)
+tail(ToothGrowth)
+```
+
+Probably, the best way to explore raw data would be the boxplot:
+```{r}
+boxplot(len~supp*dose, data=ToothGrowth, notch=FALSE, 
+  col=(c("red","blue")),
+  main="Tooth Growth", xlab="Supplement and Dose")
+```
+
+As can be seen from the graph, there is some difference between delivery methods when the dose is either 0.5 mg or 1 mg and virtually no difference in case of 2 mg dose. In order to check, if there is any significant difference between two methods, I will use t-test. Prior to that, for convenience, I will add index column so that each index represents specific dose and method:
+```{r}
+ToothGrowth$index <- rep(1:6, each = 10)
+head(ToothGrowth, n = 12)
+```
+Now I can refer to any combination of dose and supp using only index, for example, if I need entries with dose == 2 and supp == 'VC' I can do
+```{r}
+ToothGrowth[ToothGrowth$index %in% 1, ]
+```
+
+We can now apply t-test to test if means of each group are equal or not:
+
+* for 0.5 mg
+```{r}
+t.test(ToothGrowth[ToothGrowth$index %in% 4, ]$len - ToothGrowth[ToothGrowth$index %in% 1, ]$len)
+```
+If we compare t-statistic to the 95th percentile of the T distribution `r qt(.95, 9)`, it is obvious, that t statistic is too big, so we need to reject the null hypothesis in this case.
+
+* for 1 mg
+```{r}
+t.test(ToothGrowth[ToothGrowth$index %in% 5, ]$len - ToothGrowth[ToothGrowth$index %in% 2, ]$len)
+```
+
+Same happens with 1 mg dose, its t-statistic is too big.
+
+* for 2 mg
+```{r}
+t.test(ToothGrowth[ToothGrowth$index %in% 6, ]$len - ToothGrowth[ToothGrowth$index %in% 3, ]$len)
+```
+In case of 2mg doses there is no significant difference in the means of the samples.
+
+We can also compare overall effectiveness of two delivery methods without accounting for the dose, but based on the plot I would say that orange juice is more effective way of administering vitamin C:
+```{r}
+t.test(ToothGrowth[ToothGrowth$index %in% c(4, 5, 6), ]$len - ToothGrowth[ToothGrowth$index %in% c(1, 2, 3), ]$len)
+```
+As expected, t-statistics is too big, so we need to reject null hypothesis and based on the confidence interval, which is completely above zero, it is obvious that orange juice is prefered delivery method. However when we talk about big doses (like 2 mg) there is no significant difference in both methods.

@@ -1,0 +1,74 @@
+---
+title: "Regression models on mtcars dataset"
+output: pdf_document
+---
+`r data(mtcars)`
+Summary
+===
+This report is the result of analysis of mtcars dataset made in an effort to answer the following questions:
+1. Is an automatic or manual transmission better for MPG?
+2. Quantify the MPG difference between automatic and manual transmissions.
+
+The results showed that if we compare mpg only based on the type of transmission, manual transmission is better. However, if we broaden our search of parameters which can influence mpg, we can see, that weight and number of cylinders affect mpg in a more drastic fashion.
+
+One predictor
+===
+First we will build a linear regression model based solely on transmission type. Since it is in form of 0s and 1s (representing automatic and manual type respectively), we should consider this as a factor.
+```{r, echo = F}
+summary(lm(mpg ~ factor(am) - 1, data = mtcars))$coef
+```
+As can be seen from this table, manual transmission (denoted am1) is better than automatic, with difference in mpg = `r mean(mtcars[mtcars$am %in% 1, ]$mpg) - mean(mtcars[mtcars$am %in% 0, ]$mpg)`.
+
+More than one predictor
+===
+After calculating the correlation between mpg and each of other parameters in the dataset, we can choose those with highest correlation and build a linear regression model on them.
+```{r, echo = F}
+correlation <- matrix(c(cor(mtcars$mpg, mtcars$cyl), cor(mtcars$mpg, mtcars$disp), cor(mtcars$mpg, mtcars$hp), cor(mtcars$mpg, mtcars$drat), cor(mtcars$mpg, mtcars$wt), cor(mtcars$mpg, mtcars$qsec), cor(mtcars$mpg, mtcars$vs), cor(mtcars$mpg, as.numeric(mtcars$am)), cor(mtcars$mpg, mtcars$gear), cor(mtcars$mpg, mtcars$carb)), nrow = 1)
+rownames(correlation) <- 'mpg'
+colnames(correlation) <- names(mtcars[, 2:11])
+correlation
+```
+Cyl and disp (number of cylinders and displacement respectively) both showed high correlation with mpg, but since they, obviously, depend on each other, only cyl will be used. Another predictor will be wt.
+
+```{r, echo = F}
+summary(lm(mpg ~ factor(cyl) + wt + factor(am) - 1, data = mtcars))$coef
+```
+Based on p-value, we can see that if we consider number of cylinders and weight, transmission type can be ignored.
+
+```{r, echo = F}
+am <- lm(mpg ~ factor(am) - 1, data = mtcars)
+amcylwt <- lm(mpg ~ factor(cyl) + wt + factor(am) - 1, data = mtcars)
+anova(am, amcylwt)
+```
+If we compare two models using ANOVA, we can notice, that adding number of cylinders and weight as predictors has improved our model.
+
+However, if we build our model based on cyl and wt without considering transmission type and compare it to the model, which uses all three parameters as predictors
+```{r, echo = F}
+cylwt <- lm(mpg ~ factor(cyl) + wt - 1, data = mtcars)
+anova(cylwt, amcylwt)
+```
+we can see, that our model hasn't really improved.
+
+\newpage
+
+Appendix
+===
+
+Comparing mpg with automatic and manual transmission type
+
+```{r, echo = F}
+boxplot(mtcars$mpg[mtcars$am == 0], mtcars$mpg[mtcars$am == 1])
+```
+
+\newpage
+
+While our p-values showed significance, we can plot a residual plot to check whether there is really no hidden pattern
+
+```{r, echo = F}
+plot(predict(amcylwt), resid(amcylwt), pch = 19)
+```
+
+```{r, echo = F}
+par(mfrow = c(2, 2))
+plot(amcylwt)
+```

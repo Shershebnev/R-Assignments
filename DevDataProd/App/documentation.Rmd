@@ -1,0 +1,6 @@
+---
+title: "Documentation"
+output: html_document
+---
+
+This app calculates an average MPG based on users choice of three parameters: number of cylinders, weight and transmition type (automatic or manual). Calculations are based on mtcars dataset. User can select number of cylinders using arrows on the first input line (possible values are 4, 6, 8), set slider to give the desirable range of weight (min  = 1.5, max = 5.5) and select transmittion type (either automatic or manual) using radiobuttons. After clicking submit button, calcualtions will be showed on the bottom left side

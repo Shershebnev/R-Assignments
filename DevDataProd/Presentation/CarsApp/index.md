@@ -36,3 +36,14 @@ MPG is calculated based on three parameters:
 ## Calculations
 
 In order to get calculations user should select number of cylinders, set the desired range of weights and then choose the transmission type. If there is any data for specified range, average MPG will be shown after clicking the "Submit" button.
+
+For example if number of cylinders = 4, weight is in range (1.5 : 3) and transmission type is manual, the user will get the following calculations:
+
+
+```r
+meanMPG(4, 1.5, 3, 1)
+```
+
+```
+## [1] 24.39231
+```

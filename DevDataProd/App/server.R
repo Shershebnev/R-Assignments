@@ -23,5 +23,7 @@ shinyServer(
     output$radioValue <- renderText({ifelse(input$radio == 0, 'Automatic', 'Manual')})
 
     output$aveMPG <- renderText(meanMPG(input$cyl, input$slider[1], input$slider[2], input$radio))
+    
+    output$help <- renderUI({'This app calculates an average MPG based on users choice of three parameters: number of cylinders (4, 6, or 8), weight (range between 1.5 and 5.5) and transmition type (automatic or manual).'})
   }
 )

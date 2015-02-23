@@ -23,7 +23,11 @@ shinyUI(pageWithSidebar(
     br(),
     br(),
     h3('Average MPG for this characteristics is...'),
-    verbatimTextOutput('aveMPG')
+    verbatimTextOutput('aveMPG'),
+    br(),
+    br(),
+    h3('Help:'),
+    htmlOutput('help')
   )
 ))
 
